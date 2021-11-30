@@ -14,7 +14,7 @@ python -m torch.distributed.launch --nproc_per_node=4 \
 train_vit_pt_pycls_gpu.py --mode=graph --micro_batch_size=2
 
 python -m torch.distributed.launch --nproc_per_node=4 \
-train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=4
+train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=2
 """
 import argparse
 import time
@@ -214,7 +214,7 @@ class ViT(Module):
         x = x.permute(2, 0, 1)
         x = x + self.pos_embedding
         x = self.encoder(x)
-        print("forward: x.shape: ", x.shape)
+        x = x[0, :, :]
         return self.head(x)
 
 
