@@ -333,10 +333,6 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
 
         optimizer.zero_grad()
         loss.backward(create_graph=second_order)
-        if args.clip_grad is not None:
-            dispatch_clip_grad(
-                model_parameters(model, exclude_head='agc' in args.clip_mode),
-                value=args.clip_grad, mode=args.clip_mode)
         optimizer.step()
 
         torch.cuda.synchronize()
