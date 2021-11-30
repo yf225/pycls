@@ -11,10 +11,10 @@ cd pycls && git pull
 export PYTHONPATH=/fsx/users/willfeng/repos/pytorch-image-models:${PYTHONPATH}
 
 python -m torch.distributed.launch --nproc_per_node=4 \
-train_vit_pt_pycls_gpu.py --mode=graph --micro_batch_size=2
+train_vit_pt_pycls_gpu.py --mode=graph --micro_batch_size=4
 
 python -m torch.distributed.launch --nproc_per_node=4 \
-train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=2
+train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=4
 """
 import argparse
 import time
@@ -302,7 +302,7 @@ def main():
             train_metrics = train_one_epoch(
                 epoch, model, loader_train, optimizer, train_loss_fn, args)
         if args.local_rank == 0:
-            print("micro_batch_size: {}, mean step duration: {:.3f}".format(args.micro_batch_size, statistics.median(step_duration_list)))
+            print("micro_batch_size: {}, median step duration: {:.3f}".format(args.micro_batch_size, statistics.median(step_duration_list)))
     except KeyboardInterrupt:
         pass
 
