@@ -191,16 +191,7 @@ class ViT(Module):
         p = params
         err_str = "Input shape indivisible by patch size"
         assert p["image_size"] % p["patch_size"] == 0, err_str
-        assert p["stem_type"] in ["patchify", "conv"], "Unexpected stem type"
         assert p["cls_type"] in ["token", "pooled"], "Unexpected classifier mode"
-        if p["stem_type"] == "conv":
-            err_str = "Conv stem layers mismatch"
-            assert len(p["c_stem_dims"]) == len(p["c_stem_strides"]), err_str
-            assert len(p["c_stem_strides"]) == len(p["c_stem_kernels"]), err_str
-            err_str = "Stem strides unequal to patch size"
-            assert p["patch_size"] == np.prod(p["c_stem_strides"]), err_str
-            err_str = "Stem output dim unequal to hidden dim"
-            assert p["c_stem_dims"][-1] == p["hidden_d"], err_str
 
     def __init__(self, params=None):
         super(ViT, self).__init__()
