@@ -7,6 +7,7 @@ cd /fsx/users/willfeng/repos
 rm -rf ./pycls || true
 git clone https://github.com/yf225/pycls.git -b vit_dummy_data
 cd pycls && git pull
+
 export PYTHONPATH=/fsx/users/willfeng/repos/pytorch-image-models:${PYTHONPATH}
 
 python -m torch.distributed.launch --nproc_per_node=4 \
@@ -345,7 +346,7 @@ def main():
     amp_autocast = suppress  # do nothing
     loss_scaler = None
     if use_amp == 'apex':
-        assert args.apex_amp_opt_level == 'O3', "only half-pr\ecision is supported!"
+        assert args.apex_amp_opt_level == 'O3', "only half-precision is supported!"
         model, optimizer = amp.initialize(model, optimizer, opt_level=args.apex_amp_opt_level)
         loss_scaler = ApexScaler()
         if args.local_rank == 0:
