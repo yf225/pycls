@@ -214,6 +214,7 @@ class ViT(Module):
         x = x.permute(2, 0, 1)
         x = x + self.pos_embedding
         x = self.encoder(x)
+        print("forward: x.shape: ", x.shape)
         return self.head(x)
 
 
