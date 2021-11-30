@@ -191,7 +191,6 @@ class ViT(Module):
         p = params
         err_str = "Input shape indivisible by patch size"
         assert p["image_size"] % p["patch_size"] == 0, err_str
-        assert p["cls_type"] in ["token", "pooled"], "Unexpected classifier mode"
 
     def __init__(self, params=None):
         super(ViT, self).__init__()
