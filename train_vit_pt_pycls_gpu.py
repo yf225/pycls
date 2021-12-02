@@ -70,8 +70,6 @@ parser.add_argument('--channels-last', action='store_true', default=False,
 parser.add_argument('--pin-mem', action='store_true', default=False,
                     help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
 parser.add_argument("--local_rank", default=0, type=int)
-parser.add_argument('--use-multi-epochs-loader', action='store_true', default=False,
-                    help='use the multi-epochs-loader to save time at the beginning of every epoch')
 parser.add_argument('--mode', type=str,
                     help='"eager" or "graph"')
 parser.add_argument('--log-interval', type=int, default=1, metavar='N',
@@ -335,6 +333,8 @@ def main():
                 should_profile = False  # NOTE: only profile one epoch
         if args.local_rank == 0:
             print("micro_batch_size: {}, median step duration: {:.3f}".format(args.micro_batch_size, statistics.median(step_duration_list)))
+        if should_profile and args.local_rank == 0:
+
     except KeyboardInterrupt:
         pass
 
@@ -356,12 +356,18 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
         if args.channels_last:
             input = input.contiguous(memory_format=torch.channels_last)
 
-        output = model(input)
-        loss = loss_fn(output, target)
+        with torch.autograd.profiler.record_function("### forward ###"):
+            output = model(input)
+            loss = loss_fn(output, target)
 
-        optimizer.zero_grad()
-        loss.backward(create_graph=second_order)
-        optimizer.step()
+        with torch.autograd.profiler.record_function("### zero_grad ###"):
+            optimizer.zero_grad()
+
+        with torch.autograd.profiler.record_function("### backward ###"):
+            loss.backward(create_graph=second_order)
+
+        with torch.autograd.profiler.record_function("### optimizer step ###"):
+            optimizer.step()
 
         torch.cuda.synchronize()
         num_updates += 1
