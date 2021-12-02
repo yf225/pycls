@@ -331,8 +331,6 @@ def main():
                 should_profile = False  # NOTE: only profile one epoch
         if args.local_rank == 0:
             print("micro_batch_size: {}, median step duration: {:.3f}".format(args.micro_batch_size, statistics.median(step_duration_list)))
-        if should_profile and args.local_rank == 0:
-
     except KeyboardInterrupt:
         pass
 
