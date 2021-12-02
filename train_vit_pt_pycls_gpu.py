@@ -318,7 +318,7 @@ def main():
 
             if should_profile and args.local_rank == 0:
                 prof.__exit__(None, None, None)
-                trace_dir_path = "train_vit_pt_timm_gpu_trace"
+                trace_dir_path = "train_vit_pt_pycls_gpu_trace"
                 if not os.path.isdir(trace_dir_path):
                     os.mkdir(trace_dir_path)
                 prof.export_chrome_trace(os.path.join(trace_dir_path, "trace_{}_{}_{}.json".format(str(int(time.time())), args.num_devices, args.local_rank)))
