@@ -67,8 +67,6 @@ parser.add_argument("--micro_batch_size", default=32, type=int)
 # Misc
 parser.add_argument('--channels-last', action='store_true', default=False,
                     help='Use channels_last memory layout')
-parser.add_argument('--pin-mem', action='store_true', default=False,
-                    help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
 parser.add_argument("--local_rank", default=0, type=int)
 parser.add_argument('--mode', type=str,
                     help='"eager" or "graph"')
