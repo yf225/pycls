@@ -292,7 +292,7 @@ def main():
         is_training=True,
         no_aug=True,
         fp16=True,
-        distributed=True,
+        distributed=args.distributed,
     )
 
     # setup loss function
@@ -314,7 +314,6 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
     second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
     batch_time_m = AverageMeter()
     data_time_m = AverageMeter()
-    losses_m = AverageMeter()
 
     model.train()
 
@@ -330,9 +329,6 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
         output = model(input)
         loss = loss_fn(output, target)
 
-        if not args.distributed:
-            losses_m.update(loss.item(), input.size(0))
-
         optimizer.zero_grad()
         loss.backward(create_graph=second_order)
         optimizer.step()
@@ -346,14 +342,9 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
             lrl = [param_group['lr'] for param_group in optimizer.param_groups]
             lr = sum(lrl) / len(lrl)
 
-            if args.distributed:
-                reduced_loss = reduce_tensor(loss.data, args.world_size)
-                losses_m.update(reduced_loss.item(), input.size(0))
-
             if args.local_rank == 0:
                 print_if_verbose(
                     'Train: {} [{:>4d}/{} ({:>3.0f}%)]  '
-                    'Loss: {loss.val:#.4g} ({loss.avg:#.3g})  '
                     'Time: {batch_time.val:.3f}s, {rate:>7.2f}/s  '
                     '({batch_time.avg:.3f}s, {rate_avg:>7.2f}/s)  '
                     'LR: {lr:.3e}  '
@@ -361,7 +352,6 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
                         epoch,
                         batch_idx, len(loader),
                         100. * batch_idx / last_idx,
-                        loss=losses_m,
                         batch_time=batch_time_m,
                         rate=input.size(0) * args.world_size / batch_time_m.val,
                         rate_avg=input.size(0) * args.world_size / batch_time_m.avg,
@@ -371,7 +361,7 @@ def train_one_epoch(epoch, model, loader, optimizer, loss_fn, args):
         end = time.time()
         # end for
 
-    return OrderedDict([('loss', losses_m.avg)])
+    return OrderedDict([('loss', -1)])
 
 
 if __name__ == '__main__':
