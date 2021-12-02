@@ -181,11 +181,8 @@ from typing import Optional, Tuple
 
 import torch
 from torch import Tensor
-from .linear import NonDynamicallyQuantizableLinear
 from torch.nn.init import constant_, xavier_normal_, xavier_uniform_
 from torch.nn.parameter import Parameter
-from .module import Module
-from .. import functional as F
 
 
 class MultiheadAttentionUseSeparateProjWeight(nn.Module):
