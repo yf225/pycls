@@ -184,6 +184,7 @@ from torch import Tensor
 from torch.nn.modules.linear import NonDynamicallyQuantizableLinear
 from torch.nn.init import constant_, xavier_normal_, xavier_uniform_
 from torch.nn.parameter import Parameter
+import torch.nn.functional as F
 
 
 class MultiheadAttentionUseSeparateProjWeight(nn.Module):
