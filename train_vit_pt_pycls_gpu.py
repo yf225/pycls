@@ -46,6 +46,7 @@ torch.backends.cudnn.benchmark = True
 
 # Hyperparams
 
+should_profile = True
 VERBOSE = False
 num_attention_heads = 16
 hidden_size = 1280
@@ -55,7 +56,7 @@ image_size = 224
 patch_size = 16  # Size of the patches to be extract from the input images
 
 num_classes = 1000
-num_epochs = 10
+num_epochs = 3
 
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
@@ -221,6 +222,8 @@ class ViT(Module):
 step_duration_list = []
 
 def main():
+    global should_profile
+
     args = parser.parse_args()
 
     args.distributed = False
@@ -301,8 +304,25 @@ def main():
 
     try:
         for epoch in range(start_epoch, num_epochs):
+            if should_profile and args.local_rank == 0:
+                prof = torch.profiler.profile(
+                    activities=[
+                        torch.profiler.ProfilerActivity.CPU,
+                        torch.profiler.ProfilerActivity.CUDA,
+                    ]
+                )
+                prof.__enter__()
+
             train_metrics = train_one_epoch(
                 epoch, model, loader_train, optimizer, train_loss_fn, args)
+
+            if should_profile and args.local_rank == 0:
+                prof.__exit__(None, None, None)
+                trace_dir_path = "train_vit_pt_timm_gpu_trace"
+                if not os.path.isdir(trace_dir_path):
+                    os.mkdir(trace_dir_path)
+                prof.export_chrome_trace(os.path.join(trace_dir_path, "trace_{}_{}_{}.json".format(str(int(time.time())), args.num_devices, args.local_rank)))
+                should_profile = False  # NOTE: only profile one epoch
         if args.local_rank == 0:
             print("micro_batch_size: {}, median step duration: {:.3f}".format(args.micro_batch_size, statistics.median(step_duration_list)))
     except KeyboardInterrupt:
