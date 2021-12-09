@@ -2,18 +2,21 @@
 
 # On Cloud TPU node (use alpha!!!), run
 """
+pip install iopath yacs submitit
+
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
+cd $HOME
 
 # Clone repository and pull latest changes.
 rm -rf ./pytorch-image-models || true
 git clone https://github.com/yf225/pytorch-image-models.git -b vit_dummy_data
-export PYTHONPATH=/fsx/users/willfeng/repos/pytorch-image-models:${PYTHONPATH}
+export PYTHONPATH=$HOME/pytorch-image-models:${PYTHONPATH}
 
 rm -rf ./pycls || true
 git clone https://github.com/yf225/pycls.git -b vit_dummy_data
 cd pycls && git pull
 
-python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=2
+python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=128
 """
 
 import argparse
@@ -28,6 +31,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torch_xla
+from torch_xla.distributed import xla_multiprocessing as xmp
 
 # !rm -rf ./pytorch-image-models || true
 # !git clone https://github.com/yf225/pytorch-image-models.git -b vit_dummy_data
@@ -322,7 +326,7 @@ flags = {}
 
 if 'COLAB_TPU_ADDR' in os.environ:
   # Note: Colab only supports start_method='fork'
-  torch_xla.distributed.xla_multiprocessing.spawn(map_fn, args=(flags,), nprocs=num_devices, start_method='fork')
+  xmp.spawn(map_fn, args=(flags,), nprocs=num_devices, start_method='fork')
 
 if __name__ == "__main__":
-  torch_xla.distributed.xla_multiprocessing.spawn(map_fn, args=(flags,), nprocs=num_devices, start_method='fork')
+  xmp.spawn(map_fn, args=(flags,), nprocs=num_devices, start_method='fork')
