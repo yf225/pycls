@@ -166,7 +166,7 @@ class ViTEncoder(Module):
     def forward(self, x):
         for block in self.children():
             x = block(x)
-        return x
+        return self.ln(x)
 
 
 class ViTStemPatchify(Module):
