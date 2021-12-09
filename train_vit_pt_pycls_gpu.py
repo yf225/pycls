@@ -4,11 +4,14 @@
 conda activate torch-1.10
 
 cd /fsx/users/willfeng/repos
+
+rm -rf ./pytorch-image-models || true
+git clone https://github.com/yf225/pytorch-image-models.git -b vit_dummy_data
+export PYTHONPATH=/fsx/users/willfeng/repos/pytorch-image-models:${PYTHONPATH}
+
 rm -rf ./pycls || true
 git clone https://github.com/yf225/pycls.git -b vit_dummy_data
 cd pycls && git pull
-
-export PYTHONPATH=/fsx/users/willfeng/repos/pytorch-image-models:${PYTHONPATH}
 
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 \
 train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=4

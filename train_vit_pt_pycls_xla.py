@@ -7,7 +7,6 @@ pip install iopath yacs submitit
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
 cd $HOME
 
-# Clone repository and pull latest changes.
 rm -rf ./pytorch-image-models || true
 git clone https://github.com/yf225/pytorch-image-models.git -b vit_dummy_data
 export PYTHONPATH=$HOME/pytorch-image-models:${PYTHONPATH}
