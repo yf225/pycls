@@ -294,11 +294,30 @@ def main():
         distributed=args.distributed,
     )
 
+    sample_batch = next(iter(torch.utils.data.DataLoader(
+        dataset_train,
+        batch_size=args.micro_batch_size,  # NOTE: this should be batch size per TPU core, re. https://discuss.pytorch.org/t/72769/2
+        sampler=torch.utils.data.distributed.DistributedSampler(
+            dataset_train,
+            num_replicas=args.world_size,
+            rank=args.local_rank,
+        ),
+        num_workers=1,
+    )))
+    print("sample_batch[0].shape: ", sample_batch[0].shape)
+    assert list(sample_batch[0].shape) == [args.micro_batch_size, 3, image_size, image_size]
+
     # setup loss function
     train_loss_fn = nn.CrossEntropyLoss().to(torch.half)
     train_loss_fn = train_loss_fn.cuda()
 
     try:
+        from fvcore.nn import FlopCountAnalysis
+        from fvcore.nn import flop_count_table
+        if args.local_rank == 0:
+            flops = FlopCountAnalysis(model, sample_batch[0].to("cuda:0"))
+            print(flop_count_table(flops))
+
         for epoch in range(start_epoch, num_epochs):
             if should_profile and args.local_rank == 0:
                 def recorder_enter_hook(module, input):
