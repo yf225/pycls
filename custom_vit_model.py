@@ -52,7 +52,6 @@ class ViTEncoderBlock(Module):
         super().__init__()
         self.ln_1 = layernorm(hidden_d)
         # self.self_attention = MultiheadAttentionSeparateProjection(hidden_d, n_heads)
-        # print(hidden_d, n_heads, True, 0., 0.)
         self.self_attention = Attention(dim=hidden_d, num_heads=n_heads, qkv_bias=True, attn_drop=0., proj_drop=0.)
         self.ln_2 = layernorm(hidden_d)
         self.mlp_block = MLPBlock(hidden_d, mlp_d)
@@ -60,7 +59,6 @@ class ViTEncoderBlock(Module):
     def forward(self, x):
         x_p = self.ln_1(x)
         # x_p, _ = self.self_attention(x_p, x_p, x_p)
-        # print("x_p.shape: ", x_p.shape)
         x_p = self.self_attention(x_p)
         x = x + x_p
         x_p = self.mlp_block(self.ln_2(x))
@@ -206,7 +204,7 @@ class PatchEncoder(torch.nn.Module):
 #         else:
 #             return attn_output, attn_output_weights
 
-# # PyCls original version (use Conv2D for patchify, torch.zeros for pos embed)
+# # PyCls original version (use Conv2D for patchify, torch.zeros for pos embed, torch MHA for attention - need to revert changes to ViTEncoderBlock)
 # class ViT(Module):
 #     """Vision transformer as per https://arxiv.org/abs/2010.11929."""
 
@@ -242,7 +240,7 @@ class PatchEncoder(torch.nn.Module):
 #         return self.head(x)
 
 
-# Our modified version (use Dense for patchify, torch.zeros for pos embed)
+# Our modified version (use Dense for patchify, Embedding for pos embed, custom Attention for attention)
 class ViT(Module):
     """Vision transformer as per https://arxiv.org/abs/2010.11929."""
 
@@ -265,9 +263,8 @@ class ViT(Module):
     def forward(self, x):
         # (n, c, h, w) -> (n, (n_h * n_w), hidden_d)
         x = self.embed_layer(x)
-        # (n, (n_h * n_w), hidden_d) -> ((n_h * n_w), n, hidden_d)
-        # x = x.transpose(0, 1)
 
         x = self.encoder(x)
         x = x[0, :, :]
+        print("x.shape: ", x.shape)
         return self.head(x)
