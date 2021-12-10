@@ -267,5 +267,4 @@ class ViT(Module):
         x = self.encoder(x)
         x = x[:, 0]
         x = self.head(x)
-        print("x.shape: ", x.shape)
         return x
