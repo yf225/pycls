@@ -77,16 +77,16 @@ def print_if_verbose(msg):
         print(msg, flush=True)
 
 class VitDummyDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset_size, crop_size, num_classes):
+    def __init__(self, dataset_size, image_size, num_classes):
         self.dataset_size = dataset_size
-        self.crop_size = crop_size
+        self.image_size = image_size
         self.num_classes = num_classes
 
     def __len__(self):
         return self.dataset_size
 
     def __getitem__(self, index):
-        return (torch.rand(3, self.crop_size, self.crop_size).to(torch.half), torch.randint(self.num_classes, (1,)).to(torch.long))
+        return (torch.rand(self.image_size, self.image_size, 3).to(torch.half), torch.randint(self.num_classes, (1,)).to(torch.long))
 
 step_duration_list = []
 
@@ -159,7 +159,7 @@ def main():
     dataset_train = VitDummyDataset(args.micro_batch_size * args.num_devices * 10, image_size, num_classes)
     loader_train = create_loader(
         dataset_train,
-        input_size=(3, 224, 224),
+        input_size=(image_size, image_size, 3),
         batch_size=args.micro_batch_size,  # NOTE: this should be batch size per GPU, re. https://discuss.pytorch.org/t/72769/2
         is_training=True,
         no_aug=True,
@@ -178,7 +178,7 @@ def main():
         num_workers=1,
     )))
     print("sample_batch[0].shape: ", sample_batch[0].shape)
-    assert list(sample_batch[0].shape) == [args.micro_batch_size, 3, image_size, image_size]
+    assert list(sample_batch[0].shape) == [args.micro_batch_size, image_size, image_size, 3]
 
     # setup loss function
     train_loss_fn = nn.CrossEntropyLoss().to(torch.half)
