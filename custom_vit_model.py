@@ -52,7 +52,8 @@ class ViTEncoderBlock(Module):
         super().__init__()
         self.ln_1 = layernorm(hidden_d)
         # self.self_attention = MultiheadAttentionSeparateProjection(hidden_d, n_heads)
-        self.self_attention = Attention(hidden_d, num_heads=n_heads, qkv_bias=True, attn_drop=0., proj_drop=0.)
+        assert mlp_d / hidden_d == 4.
+        self.self_attention = Attention(dim=hidden_d, num_heads=n_heads, mlp_ratio=4., qkv_bias=True, attn_drop=0., proj_drop=0.)
         self.ln_2 = layernorm(hidden_d)
         self.mlp_block = MLPBlock(hidden_d, mlp_d)
 
