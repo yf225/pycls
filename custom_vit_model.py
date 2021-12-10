@@ -52,7 +52,7 @@ class ViTEncoderBlock(Module):
         super().__init__()
         self.ln_1 = layernorm(hidden_d)
         # self.self_attention = MultiheadAttentionSeparateProjection(hidden_d, n_heads)
-        print(hidden_d, n_heads, True, 0., 0.)
+        # print(hidden_d, n_heads, True, 0., 0.)
         self.self_attention = Attention(dim=hidden_d, num_heads=n_heads, qkv_bias=True, attn_drop=0., proj_drop=0.)
         self.ln_2 = layernorm(hidden_d)
         self.mlp_block = MLPBlock(hidden_d, mlp_d)
@@ -60,7 +60,7 @@ class ViTEncoderBlock(Module):
     def forward(self, x):
         x_p = self.ln_1(x)
         # x_p, _ = self.self_attention(x_p, x_p, x_p)
-        print("x_p.shape: ", x_p.shape)
+        # print("x_p.shape: ", x_p.shape)
         x_p = self.self_attention(x_p)
         x = x + x_p
         x_p = self.mlp_block(self.ln_2(x))
@@ -265,10 +265,13 @@ class ViT(Module):
     def forward(self, x):
         # (n, c, h, w) -> (n, n_h, n_w, hidden_d)
         x = self.embed_layer(x)
+        print("here1 x.shape: ", x.shape)
         # (n, n_h, n_w, hidden_d) -> (n, (n_h * n_w), hidden_d)
         x = x.reshape(x.size(0), -1, x.size(-1))
+        print("here2 x.shape: ", x.shape)
         # (n, (n_h * n_w), hidden_d) -> ((n_h * n_w), n, hidden_d)
         x = x.transpose(0, 1)
+        print("here3 x.shape: ", x.shape)
 
         x = self.encoder(x)
         x = x[0, :, :]
