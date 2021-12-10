@@ -77,15 +77,46 @@ class ViTEncoder(Module):
         return x
 
 
-class ViTStemPatchify(Module):
-    """The patchify vision transformer stem as per https://arxiv.org/abs/2010.11929."""
+# class ViTStemPatchify(Module):
+#     """The patchify vision transformer stem as per https://arxiv.org/abs/2010.11929."""
 
-    def __init__(self, w_in, w_out, k):
-        super(ViTStemPatchify, self).__init__()
-        self.patchify = patchify2d(w_in, w_out, k, bias=True)
+#     def __init__(self, w_in, w_out, k):
+#         super(ViTStemPatchify, self).__init__()
+#         self.patchify = patchify2d(w_in, w_out, k, bias=True)
 
-    def forward(self, x):
-        return self.patchify(x)
+#     def forward(self, x):
+#         return self.patchify(x)
+
+class PatchEncoder(torch.nn.Module):
+    def __init__(self, img_size, patch_size, in_chans, embed_dim):
+        super().__init__()
+        img_size = (img_size, img_size)
+        patch_size = (patch_size, patch_size)
+        self.patch_size = patch_size
+        self.in_chans = in_chans
+        self.flatten_dim = self.patch_size[0] * self.patch_size[1] * in_chans
+        self.img_size = img_size
+        self.grid_size = (img_size[0] // patch_size[0], img_size[1] // patch_size[1])
+        self.num_patches = self.grid_size[0] * self.grid_size[1]
+        self.projection = torch.nn.Linear(
+            self.flatten_dim, embed_dim
+        )
+        self.position_embedding = torch.nn.Embedding(
+            num_embeddings=self.num_patches, embedding_dim=embed_dim
+        )
+
+    def forward(self, input):
+        rearranged_input = input.view(-1, self.grid_size[0] * self.grid_size[1], self.patch_size[0] * self.patch_size[1] * self.in_chans)
+        # rearranged_input = einops.rearrange(
+        #     input,
+        #     "b c (h p1) (w p2) -> b (h w) (p1 p2 c)",
+        #     p1=self.patch_size[0],
+        #     p2=self.patch_size[1],
+        # )
+        positions = torch.arange(start=0, end=self.num_patches, step=1).to(input.device)
+        ret = self.projection(rearranged_input)
+        ret = ret + self.position_embedding(positions)
+        return ret
 
 import warnings
 from typing import Optional, Tuple
@@ -170,7 +201,43 @@ class MultiheadAttentionSeparateProjection(Module):
         else:
             return attn_output, attn_output_weights
 
+# # PyCls original version (use Conv2D for patchify, torch.zeros for pos embed)
+# class ViT(Module):
+#     """Vision transformer as per https://arxiv.org/abs/2010.11929."""
 
+#     @staticmethod
+#     def check_params(params):
+#         p = params
+#         err_str = "Input shape indivisible by patch size"
+#         assert p["image_size"] % p["patch_size"] == 0, err_str
+
+#     def __init__(self, params=None):
+#         super(ViT, self).__init__()
+#         p = ViT.get_params() if not params else params
+#         ViT.check_params(p)
+#         self.stem = ViTStemPatchify(3, p["hidden_d"], p["patch_size"])
+#         seq_len = (p["image_size"] // cfg.VIT.PATCH_SIZE) ** 2
+#         self.class_token = None
+#         self.pos_embedding = Parameter(torch.zeros(seq_len, 1, p["hidden_d"]))
+#         self.encoder = ViTEncoder(
+#             p["n_layers"], p["hidden_d"], p["n_heads"], p["mlp_d"]
+#         )
+#         self.head = ViTHead(p["hidden_d"], p["num_classes"])
+
+#     def forward(self, x):
+#         # (n, c, h, w) -> (n, hidden_d, n_h, n_w)
+#         x = self.stem(x)
+#         # (n, hidden_d, n_h, n_w) -> (n, hidden_d, (n_h * n_w))
+#         x = x.reshape(x.size(0), x.size(1), -1)
+#         # (n, hidden_d, (n_h * n_w)) -> ((n_h * n_w), n, hidden_d)
+#         x = x.permute(2, 0, 1)
+#         x = x + self.pos_embedding
+#         x = self.encoder(x)
+#         x = x[0, :, :]
+#         return self.head(x)
+
+
+# Our modified version (use Dense for patchify, torch.zeros for pos embed)
 class ViT(Module):
     """Vision transformer as per https://arxiv.org/abs/2010.11929."""
 
@@ -184,23 +251,20 @@ class ViT(Module):
         super(ViT, self).__init__()
         p = ViT.get_params() if not params else params
         ViT.check_params(p)
-        self.stem = ViTStemPatchify(3, p["hidden_d"], p["patch_size"])
-        seq_len = (p["image_size"] // cfg.VIT.PATCH_SIZE) ** 2
-        self.class_token = None
-        self.pos_embedding = Parameter(torch.zeros(seq_len, 1, p["hidden_d"]))
+        self.embed_layer = PatchEncoder(p["image_size"], p["patch_size"], 3, p["hidden_d"])
         self.encoder = ViTEncoder(
             p["n_layers"], p["hidden_d"], p["n_heads"], p["mlp_d"]
         )
         self.head = ViTHead(p["hidden_d"], p["num_classes"])
 
     def forward(self, x):
-        # (n, c, h, w) -> (n, hidden_d, n_h, n_w)
-        x = self.stem(x)
-        # (n, hidden_d, n_h, n_w) -> (n, hidden_d, (n_h * n_w))
-        x = x.reshape(x.size(0), x.size(1), -1)
-        # (n, hidden_d, (n_h * n_w)) -> ((n_h * n_w), n, hidden_d)
-        x = x.permute(2, 0, 1)
-        x = x + self.pos_embedding
+        # (n, c, h, w) -> (n, n_h, n_w, hidden_d)
+        x = self.embed_layer(x)
+        # (n, n_h, n_w, hidden_d) -> (n, (n_h * n_w), hidden_d)
+        x = x.reshape(x.size(0), -1, x.size(-1))
+        # (n, (n_h * n_w), hidden_d) -> ((n_h * n_w), n, hidden_d)
+        x = x.transpose(0, 1)
+
         x = self.encoder(x)
         x = x[0, :, :]
         return self.head(x)
