@@ -265,6 +265,5 @@ class ViT(Module):
         x = self.embed_layer(x)
 
         x = self.encoder(x)
-        x = x[0, :, :]
         print("x.shape: ", x.shape)
         return self.head(x)
