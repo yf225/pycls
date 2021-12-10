@@ -263,15 +263,10 @@ class ViT(Module):
         self.head = ViTHead(p["hidden_d"], p["num_classes"])
 
     def forward(self, x):
-        # (n, c, h, w) -> (n, n_h, n_w, hidden_d)
+        # (n, c, h, w) -> (n, (n_h * n_w), hidden_d)
         x = self.embed_layer(x)
-        print("here1 x.shape: ", x.shape)
-        # (n, n_h, n_w, hidden_d) -> (n, (n_h * n_w), hidden_d)
-        x = x.reshape(x.size(0), -1, x.size(-1))
-        print("here2 x.shape: ", x.shape)
         # (n, (n_h * n_w), hidden_d) -> ((n_h * n_w), n, hidden_d)
-        x = x.transpose(0, 1)
-        print("here3 x.shape: ", x.shape)
+        # x = x.transpose(0, 1)
 
         x = self.encoder(x)
         x = x[0, :, :]
