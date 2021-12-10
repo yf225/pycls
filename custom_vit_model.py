@@ -60,6 +60,7 @@ class ViTEncoderBlock(Module):
     def forward(self, x):
         x_p = self.ln_1(x)
         # x_p, _ = self.self_attention(x_p, x_p, x_p)
+        print("x_p.shape: ", x_p.shape)
         x_p = self.self_attention(x_p)
         x = x + x_p
         x_p = self.mlp_block(self.ln_2(x))
