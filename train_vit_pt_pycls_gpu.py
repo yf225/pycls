@@ -17,7 +17,7 @@ export PATH=/usr/local/cuda-11.1/bin:${PATH}
 export LD_LIBRARY_PATH=/usr/local/cuda-11.1/lib64:/usr/local/cuda-11.1/extras/CUPTI/lib64:${LD_LIBRARY_PATH}
 
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 \
-train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=4
+train_vit_pt_pycls_gpu.py --mode=eager --micro_batch_size=64
 
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m torch.distributed.launch --nproc_per_node=4 \
 train_vit_pt_pycls_gpu.py --mode=graph --micro_batch_size=4
