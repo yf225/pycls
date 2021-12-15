@@ -16,7 +16,7 @@ rm -rf ./pycls || true
 git clone https://github.com/yf225/pycls.git -b vit_dummy_data
 cd pycls && git pull
 
-python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=68
+python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=84
 """
 
 import argparse
