@@ -38,7 +38,7 @@ from timm.data import create_dataset, create_loader
 from timm.utils import *
 from timm.loss import *
 from timm.optim import create_optimizer_v2
-from custom_vit_model import ViT
+from custom_vit_model import create_vit_model
 
 torch.backends.cudnn.benchmark = True
 
@@ -86,7 +86,7 @@ class VitDummyDataset(torch.utils.data.Dataset):
         return self.dataset_size
 
     def __getitem__(self, index):
-        return (torch.rand(self.image_size, self.image_size, 3).to(torch.half), torch.randint(self.num_classes, (1,)).to(torch.long))
+        return (torch.zeros(self.image_size, self.image_size, 3).to(torch.half), torch.zeros(1).to(torch.long))
 
 step_duration_list = []
 
@@ -117,7 +117,7 @@ def main():
 
     random_seed(42, args.rank)
 
-    model = ViT(
+    model = create_vit_model(
         {
             "image_size": image_size,
             "patch_size": patch_size,
@@ -144,7 +144,7 @@ def main():
 
     model = model.cuda()
 
-    optimizer = create_optimizer_v2(model, 'adam', lr=1e-6)
+    optimizer = create_optimizer_v2(model, 'adam', lr=0.)
 
     # setup distributed training
     if args.distributed:

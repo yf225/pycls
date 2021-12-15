@@ -2,6 +2,7 @@
 
 # On Cloud TPU node (use alpha!!!), run
 """
+export PATH=/home/liamng856/.local/bin:${PATH}
 pip install iopath yacs submitit
 
 export XRT_TPU_CONFIG="localservice;0;localhost:51011"
@@ -15,7 +16,7 @@ rm -rf ./pycls || true
 git clone https://github.com/yf225/pycls.git -b vit_dummy_data
 cd pycls && git pull
 
-python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=224
+python3 train_vit_pt_pycls_xla.py --bits=16 --micro_batch_size=68
 """
 
 import argparse
@@ -32,7 +33,7 @@ import torch.optim as optim
 import torch_xla
 from torch_xla.distributed import parallel_loader as pl
 from torch_xla.distributed import xla_multiprocessing as xmp
-from custom_vit_model import ViT
+from custom_vit_model import create_vit_model
 
 # !rm -rf ./pytorch-image-models || true
 # !git clone https://github.com/yf225/pytorch-image-models.git -b vit_dummy_data
@@ -99,7 +100,7 @@ class VitDummyDataset(torch.utils.data.Dataset):
     return self.dataset_size
 
   def __getitem__(self, index):
-    return (torch.rand(image_size, image_size, 3), torch.randint(self.num_classes, (1,)).item())
+    return (torch.zeros(image_size, image_size, 3), torch.zeros(1).item())
 
 
 def create_dataloader(dataset):
@@ -128,7 +129,7 @@ def train_vit():
 
   torch.manual_seed(42)
 
-  model = ViT(
+  model = create_vit_model(
     {
       "image_size": image_size,
       "patch_size": patch_size,
@@ -145,7 +146,7 @@ def train_vit():
   optim_cls = optim.Adam
   optimizer = optim_cls(
       model.parameters(),
-      lr=0.001,
+      lr=0.,
   )
   loss_fn = nn.CrossEntropyLoss()
 

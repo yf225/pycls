@@ -232,3 +232,8 @@ class ViT(Module):
         x = self.encoder(x)
         x = x[0, :, :]
         return self.head(x)
+
+def create_vit_model(config_dict):
+    model = ViT(config_dict)
+    for w in model.parameters():
+        torch.nn.init.zeros_(w)
