@@ -237,3 +237,4 @@ def create_vit_model(config_dict):
     model = ViT(config_dict)
     for w in model.parameters():
         torch.nn.init.zeros_(w)
+    return model
